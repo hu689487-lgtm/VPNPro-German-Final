@@ -3,38 +3,31 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: cimg/android:2024.01
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-      - name: Install Gradle Directly
+      - name: Create App
         run: |
-          wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
-          unzip -q gradle-8.7-bin.zip
-          echo "$PWD/gradle-8.7/bin" >> $GITHUB_PATH
-      - name: Accept Licenses
-        run: |
-          yes | sdkmanager --licenses || true
-          mkdir -p $ANDROID_HOME/licenses
-          printf "8933bad161af4178b1185d1a37fbf41ea5269c55\nd56f5187479451eabf01fb78af6dfcb131a6481e\n24333f8a63b6825ea9c5514f83c1059b8ea4b324\n" > $ANDROID_HOME/licenses/android-sdk-license
-      - name: Create Project
-        run: |
-          python3 << 'PY'
-          import pathlib, os, shutil
-          for d in ["app","build",".gradle"]:
-            if os.path.exists(d): shutil.rmtree(d, ignore_errors=True)
-          os.makedirs("app/src/main/java/com/vpnpro/datenschutz", exist_ok=True)
-          os.makedirs("app/src/main/res/layout", exist_ok=True)
-          os.makedirs("app/src/main/res/values", exist_ok=True)
-          pathlib.Path("settings.gradle").write_text("include ':app'\n")
-          pathlib.Path("app/build.gradle").write_text('plugins { id "com.android.application" }\nandroid { namespace "com.vpnpro.datenschutz"; compileSdk 34; defaultConfig { applicationId "com.vpnpro.datenschutz"; minSdk 24; targetSdk 34; versionCode 1; versionName "1.0" } buildTypes { release { minifyEnabled false } } }\ndependencies { implementation "androidx.appcompat:appcompat:1.6.1"; implementation "com.google.android.gms:play-services-ads:22.6.0" }')
-          pathlib.Path("app/src/main/AndroidManifest.xml").write_text('<manifest xmlns:android="http://schemas.android.com/apk/res/android"><uses-permission android:name="android.permission.INTERNET"/><application android:label="VPN Pro"><meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3091902439302727~7328733128"/><activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity></application></manifest>')
-          pathlib.Path("app/src/main/java/com/vpnpro/datenschutz/MainActivity.java").write_text('package com.vpnpro.datenschutz; import android.os.Bundle; import androidx.appcompat.app.AppCompatActivity; import com.google.android.gms.ads.*; public class MainActivity extends AppCompatActivity { protected void onCreate(Bundle b){ super.onCreate(b); setContentView(R.layout.activity_main); MobileAds.initialize(this, s->{}); AdView ad=findViewById(R.id.adView); ad.setAdUnitId("ca-app-pub-3091902439302727/7227204506"); ad.loadAd(new AdRequest.Builder().build()); } }')
-          pathlib.Path("app/src/main/res/layout/activity_main.xml").write_text('<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="vertical" android:background="#0A1931" android:layout_width="match_parent" android:layout_height="match_parent"><TextView android:text="VPN Pro - Sicherer Datenschutz" android:textColor="#00FF88" android:textSize="20sp" android:gravity="center" android:layout_margin="24dp" android:layout_width="match_parent" android:layout_height="wrap_content"/><Button android:text="PRO VERBINDEN" android:backgroundTint="#00FF88" android:layout_margin="20dp" android:layout_width="match_parent" android:layout_height="64dp"/><com.google.android.gms.ads.AdView android:id="@+id/adView" android:layout_width="match_parent" android:layout_height="wrap_content"/></LinearLayout>')
-          pathlib.Path("app/src/main/res/values/strings.xml").write_text('<resources><string name="app_name">VPN Pro</string></resources>')
-          PY
+          rm -rf app build .gradle
+          mkdir -p app/src/main/java/com/vpnpro/datenschutz
+          mkdir -p app/src/main/res/layout
+          mkdir -p app/src/main/res/values
+          echo "include ':app'" > settings.gradle
+          echo 'plugins { id "com.android.application" }
+          android {
+            namespace "com.vpnpro.datenschutz"
+            compileSdk 34
+            defaultConfig { applicationId "com.vpnpro.datenschutz"; minSdk 24; targetSdk 34; versionCode 1; versionName "1.0" }
+          }
+          dependencies {
+            implementation "androidx.appcompat:appcompat:1.6.1"
+            implementation "com.google.android.gms:play-services-ads:22.6.0"
+          }' > app/build.gradle
+          echo '<manifest xmlns:android="http://schemas.android.com/apk/res/android"><uses-permission android:name="android.permission.INTERNET"/><application android:label="VPN Pro"><meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3091902439302727~7328733128"/><activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity></application></manifest>' > app/src/main/AndroidManifest.xml
+          echo 'package com.vpnpro.datenschutz; import android.os.Bundle; import androidx.appcompat.app.AppCompatActivity; import com.google.android.gms.ads.*; public class MainActivity extends AppCompatActivity { protected void onCreate(Bundle b){ super.onCreate(b); setContentView(R.layout.activity_main); MobileAds.initialize(this, o->{}); AdView ad=findViewById(R.id.adView); ad.setAdUnitId("ca-app-pub-3091902439302727/7227204506"); ad.loadAd(new AdRequest.Builder().build()); } }' > app/src/main/java/com/vpnpro/datenschutz/MainActivity.java
+          echo '<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="vertical" android:background="#0A1931" android:layout_width="match_parent" android:layout_height="match_parent"><TextView android:text="VPN Pro German - REAL ADS" android:textColor="#00FF88" android:textSize="20sp" android:gravity="center" android:layout_margin="24dp" android:layout_width="match_parent" android:layout_height="wrap_content"/><com.google.android.gms.ads.AdView android:id="@+id/adView" android:layout_width="match_parent" android:layout_height="wrap_content"/></LinearLayout>' > app/src/main/res/layout/activity_main.xml
+          echo '<resources><string name="app_name">VPN Pro</string></resources>' > app/src/main/res/values/strings.xml
       - name: Build APK
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
